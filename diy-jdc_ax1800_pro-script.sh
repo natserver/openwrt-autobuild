@@ -76,8 +76,8 @@ function git_sparse_clone() {
 # git clone --depth=1 https://github.com/ximiTech/luci-app-msd_lite package/luci-app-msd_lite
 # git clone --depth=1 https://github.com/ximiTech/msd_lite package/msd_lite
 
-# MosDNS
-git clone --depth=1 https://github.com/sbwml/luci-app-mosdns package/luci-app-mosdns
+# MosDNS (removed per requirement)
+# git clone --depth=1 https://github.com/sbwml/luci-app-mosdns package/luci-app-mosdns
 
 # Alist
 git clone --depth=1 https://github.com/sbwml/luci-app-alist package/luci-app-alist
@@ -145,3 +145,13 @@ git clone --depth=1 https://github.com/sbwml/luci-app-alist package/luci-app-ali
 # if ! grep -q "small-package" "$OPENWRT_PATH/feeds.conf.default"; then
 #     sed -i '$a src-git small8 https://github.com/kenzok8/small-package' $OPENWRT_PATH/feeds.conf.default
 # fi
+
+# ============ 品牌定制：LibWrt -> Natserver ============
+# 默认主机名
+sed -i "s/hostname='LibWrt'/hostname='Natserver'/g" package/base-files/files/bin/config_generate
+# 发行版名称（/etc/openwrt_release、/etc/os-release、banner 的 %D）
+sed -i 's/default "LibWrt"/default "Natserver"/g' package/base-files/image-config.in
+sed -i 's/defaults to LibWrt/defaults to Natserver/g' package/base-files/image-config.in
+# banner 里的作者字样
+sed -i "s/%D %V, %C Dave's Guitar/%D %V, %C Natserver/g" package/base-files/files/etc/banner
+echo "Branding changed to Natserver"

@@ -7,7 +7,7 @@ on:
 
 env:
   REPO_URL: https://github.com/LiBwrt-op/openwrt-6.x.git
-  REPO_BRANCH: openwrt-24.10
+  REPO_BRANCH: 25.12-nss
   CONFIG_FILE: configs/jdc_ax1800_pro.config
   DIY_SCRIPT: diy-jdc_ax1800_pro-script.sh
   FEEDS_DIY: feedsdiy.sh
@@ -162,10 +162,11 @@ jobs:
         token: ${{ secrets.GITHUB_TOKEN }}
         artifacts: ${{ env.FIRMWARE_PATH }}/*
         body: |
-          **This is OpenWrt Firmware for ${{ env.FIRMWARE_TAG }}**
+          **This is Natserver Firmware for ${{ env.FIRMWARE_TAG }}**
           ### 📒 固件信息(带WIFI)
-          - 这是JDC_AX1800_pro带WIFI以及NSS的6.6内核固件
-          - 💻 这是 ${{ env.FIRMWARE_TAG }} 平台使用的 OpenWrt 固件
+          - Natserver 定制：JDC_AX1800_pro 带 WIFI + NSS 的 6.12 内核固件
+          - 已移除：OpenClash、EqoS Plus、KMS(vlmcsd)、WOL、UDPxy、AdGuard Home、MosDNS、SmartDNS
+          - 💻 这是 ${{ env.FIRMWARE_TAG }} 平台使用的固件
           - ⚽ 固件源码: ${{ env.REPO_URL }}
           - 💝 源码分支: ${{ env.REPO_BRANCH }}
           - 🌐 默认地址: 192.168.10.1
