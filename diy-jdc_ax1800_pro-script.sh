@@ -146,6 +146,13 @@ git clone --depth=1 https://github.com/sbwml/luci-app-alist package/luci-app-ali
 #     sed -i '$a src-git small8 https://github.com/kenzok8/small-package' $OPENWRT_PATH/feeds.conf.default
 # fi
 
+# ============ 关闭 Ruby JIT，避免拉取 rust 编译器（ruby 交叉编译下 JIT 本不可用）============
+# 在 config_generate/defconfig 后强制关闭，避免 rust/host 依赖触发 LLVM 下载失败
+if [ -f .config ]; then
+    sed -i 's/^CONFIG_RUBY_ENABLE_YJIT=y/# CONFIG_RUBY_ENABLE_YJIT is not set/' .config
+    sed -i 's/^CONFIG_RUBY_ENABLE_ZJIT=y/# CONFIG_RUBY_ENABLE_ZJIT is not set/' .config
+fi
+
 # ============ 品牌定制：LibWrt -> Natserver ============
 # 默认主机名
 sed -i "s/hostname='LibWrt'/hostname='Natserver'/g" package/base-files/files/bin/config_generate
