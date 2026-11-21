@@ -19,6 +19,9 @@ env:
   FIRMWARE_TAG: JDC_AX1800_pro
   TZ: Asia/Shanghai
 
+permissions:
+  contents: write
+
 jobs:
   Build:
     runs-on: ubuntu-22.04
