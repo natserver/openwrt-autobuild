@@ -79,8 +79,8 @@ function git_sparse_clone() {
 # MosDNS (removed per requirement)
 # git clone --depth=1 https://github.com/sbwml/luci-app-mosdns package/luci-app-mosdns
 
-# Alist
-git clone --depth=1 https://github.com/sbwml/luci-app-alist package/luci-app-alist
+# Alist (removed: sbwml version depends on legacy golang/host, breaks build on 25.12-nss)
+# git clone --depth=1 https://github.com/sbwml/luci-app-alist package/luci-app-alist
 
 # DDNS.to
 # git_sparse_clone main https://github.com/linkease/nas-packages-luci luci/luci-app-ddnsto
