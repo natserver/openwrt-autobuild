@@ -17,6 +17,7 @@ env:
   UPLOAD_BIN_DIR: false
   FIRMWARE_RELEASE: true
   FIRMWARE_TAG: JDC_AX1800_pro
+  KEEP_DAYS: 14
   TZ: Asia/Shanghai
 
 permissions:
@@ -156,31 +157,57 @@ jobs:
         name: ${{ env.SOURCE_REPO }}-firmware-${{ env.DEVICE_TARGET }}-${{ env.DEVICE_SUBTARGET }}-${{ env.FILE_DATE }}
         path: ${{ env.FIRMWARE_PATH }}
 
-    - name: Upload Firmware To Release(发布固件)
+    - name: Publish Firmware To Releases(发布并归档固件)
       if: steps.compile.outputs.status == 'success' && env.FIRMWARE_RELEASE == 'true'
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         cd "$FIRMWARE_PATH"
         mapfile -d '' ASSETS < <(find . -maxdepth 1 -type f -printf '%f\0' | sort -z)
+        DAILY_TAG="${FIRMWARE_TAG}-${FILE_DATE}"
         cat > "$GITHUB_WORKSPACE/release-notes.md" <<EOF
-        **This is Natserver Firmware for ${{ env.FIRMWARE_TAG }}**
+        **This is Natserver Firmware for ${DAILY_TAG}**
         ### 📒 固件信息(带WIFI)
         - Natserver 定制：JDC_AX1800_pro 带 WIFI + NSS 的 6.12 内核固件
         - 已移除：OpenClash、EqoS Plus、KMS(vlmcsd)、WOL、UDPxy、AdGuard Home、MosDNS、SmartDNS
-        - 💻 这是 ${{ env.FIRMWARE_TAG }} 平台使用的固件
+        - 💻 这是 ${DAILY_TAG} 平台使用的固件
         - ⚽ 固件源码: ${{ env.REPO_URL }}
         - 💝 源码分支: ${{ env.REPO_BRANCH }}
         - 🕒 本次构建时间: ${{ env.DATE }} (Asia/Shanghai)
+        - 🗂 归档保留: 最近 ${{ env.KEEP_DAYS }} 天；固定链接: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/releases/tag/${FIRMWARE_TAG}
         - 🌐 默认地址: 192.168.10.1
         - 🔑 默认密码: password
         ### 🧊 固件版本
         - 固件编译前最后一次➦[主源码](${{ env.REPO_URL }})更新记录
         - ${{ env.VERSION_INFO }}
         EOF
+
+        # 1) 固定链接 Release：始终重建为当天最新构建，tag 不变，下载链接不变
         gh release delete "$FIRMWARE_TAG" --repo "$GITHUB_REPOSITORY" --yes 2>/dev/null || true
         gh release create "$FIRMWARE_TAG" "${ASSETS[@]}" \
           --repo "$GITHUB_REPOSITORY" \
-          --title "R${{ env.DATE }} for ${{ env.FIRMWARE_TAG }}" \
+          --title "R${{ env.DATE }} for ${DAILY_TAG}" \
           --notes-file "$GITHUB_WORKSPACE/release-notes.md" \
           --latest
+
+        # 2) 当日归档 Release：同一天重跑则覆盖当天归档，不删除历史日期
+        if gh release view "$DAILY_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+          gh release delete "$DAILY_TAG" --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag 2>/dev/null || true
+        fi
+        gh release create "$DAILY_TAG" "${ASSETS[@]}" \
+          --repo "$GITHUB_REPOSITORY" \
+          --title "R${{ env.DATE }} for ${DAILY_TAG}" \
+          --notes-file "$GITHUB_WORKSPACE/release-notes.md"
+
+        # 3) 只清理超过保留天数的归档 Release，固定 tag 永远不动
+        CUTOFF=$(( $(date -u +%s) - ${{ env.KEEP_DAYS }} * 86400 ))
+        gh api --paginate "repos/${GITHUB_REPOSITORY}/releases?per_page=100" \
+          --jq ".[] | select(.tag_name | startswith(\"${FIRMWARE_TAG}-\")) | [.tag_name, (.published_at // .created_at)] | @tsv" |
+        while IFS=$'\t' read -r old_tag old_time; do
+          [ -z "$old_tag" ] && continue
+          old_ts=$(date -u -d "$old_time" +%s 2>/dev/null || date -u +%s)
+          if [ "$old_ts" -lt "$CUTOFF" ]; then
+            echo "Delete expired archived release: $old_tag"
+            gh release delete "$old_tag" --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag || true
+          fi
+        done
