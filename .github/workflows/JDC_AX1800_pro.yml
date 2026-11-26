@@ -197,7 +197,8 @@ jobs:
         gh release create "$DAILY_TAG" "${ASSETS[@]}" \
           --repo "$GITHUB_REPOSITORY" \
           --title "R${{ env.DATE }} for ${DAILY_TAG}" \
-          --notes-file "$GITHUB_WORKSPACE/release-notes.md"
+          --notes-file "$GITHUB_WORKSPACE/release-notes.md" \
+          --latest=false
 
         # 3) 只清理超过保留天数的归档 Release，固定 tag 永远不动
         CUTOFF=$(( $(date -u +%s) - ${{ env.KEEP_DAYS }} * 86400 ))
