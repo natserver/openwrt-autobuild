@@ -12,6 +12,7 @@ env:
   DIY_SCRIPT: diy-jdc_ax1800_pro-script.sh
   FEEDS_DIY: feedsdiy.sh
   ADD_FEEDS: add_feeds.sh
+  HOME_FIX: scripts/fix-jdc-luci-homepage.sh
   CLASH_KERNEL: amd64
   CACHE_TOOLCHAIN: true
   UPLOAD_BIN_DIR: false
@@ -102,13 +103,15 @@ jobs:
         chmod +x $DIY_SCRIPT
         chmod +x $FEEDS_DIY
         chmod +x $ADD_FEEDS
+        chmod +x $GITHUB_WORKSPACE/$HOME_FIX
         bash $GITHUB_WORKSPACE/$ADD_FEEDS
         cd $OPENWRT_PATH
         bash $GITHUB_WORKSPACE/$DIY_SCRIPT
         ./scripts/feeds update -a
         ./scripts/feeds install -a
         bash $GITHUB_WORKSPACE/$FEEDS_DIY
-  
+        bash $GITHUB_WORKSPACE/$HOME_FIX
+
     - name: Load Custom Configuration(加载自定义配置)
       run: |
         [ -e $CONFIG_FILE ] && mv $CONFIG_FILE $OPENWRT_PATH/.config

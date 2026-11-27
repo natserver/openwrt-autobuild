@@ -1,0 +1,26 @@
+{
+	"luci-homepage-fix": {
+		"description": "Ensure the Argon status homepage can read all system and SoC values",
+		"read": {
+			"ubus": {
+				"luci": [
+					"getVersion", "getUnixtime", "getCPUBench", "getCPUInfo",
+					"getCPUUsage", "getTempInfo", "getOnlineUsers",
+					"getHomepageStats", "getCoreInfo", "getCoreTemp", "getCoreUsage",
+					"getConntrackList", "getRealtimeStats", "getMountPoints",
+					"getBuiltinEthernetPorts", "getOdhcp6cStats", "getProcessList"
+				],
+				"luci-rpc": [ "getBoardJSON", "getHostHints", "getNetworkDevices", "getDHCPLeases" ],
+				"system": [ "board", "info" ],
+				"file": [ "list", "read" ],
+				"iwinfo": [ "info", "assoclist" ]
+			},
+			"file": {
+				"/sbin/cpuinfo": [ "exec" ],
+				"/sbin/tempinfo": [ "exec" ],
+				"/sbin/soc-status": [ "exec" ]
+			},
+			"uci": [ "system", "luci" ]
+		}
+	}
+}

@@ -1,0 +1,73 @@
+#!/bin/sh
+# Best-effort SoC statistics for the LuCI status homepage.
+# Missing sysfs nodes produce a readable fallback instead of an empty value.
+
+get_cpu_freq() {
+	local v
+	v=$(cat /sys/devices/system/cpu/cpufreq/policy0/scaling_cur_freq 2>/dev/null)
+	[ -n "$v" ] || v=$(cat /sys/devices/system/cpu/cpufreq/policy0/cpuinfo_cur_freq 2>/dev/null)
+	if [ -n "$v" ] && [ "$v" -gt 0 ] 2>/dev/null; then
+		awk -v khz="$v" 'BEGIN { printf "%.0f MHz", khz / 1000 }'
+	else
+		echo "n/a"
+	fi
+}
+
+get_cpu_governor() {
+	local v
+	v=$(cat /sys/devices/system/cpu/cpufreq/policy0/scaling_governor 2>/dev/null)
+	echo "${v:-n/a}"
+}
+
+get_cpu_temp() {
+	local v
+	v=$(cat /sys/class/thermal/thermal_zone*/temp 2>/dev/null | sort -n | tail -n1)
+	if [ -n "$v" ] && [ "$v" -gt 0 ] 2>/dev/null; then
+		awk -v milli="$v" 'BEGIN { printf "%.1f C", milli / 1000 }'
+	else
+		echo "n/a"
+	fi
+}
+
+get_wifi_temp() {
+	local v
+	v=$(cat /sys/class/ieee80211/phy*/hwmon*/temp*_input 2>/dev/null | sort -n | tail -n1)
+	if [ -n "$v" ] && [ "$v" -gt 0 ] 2>/dev/null; then
+		awk -v milli="$v" 'BEGIN { printf "%.1f C", milli / 1000 }'
+	else
+		echo "n/a"
+	fi
+}
+
+get_cpu_usage() {
+	local v
+	v=$(top -bn1 2>/dev/null | awk '/^CPU/ { printf "%d", 100 - $8; exit }')
+	if [ -n "$v" ]; then
+		echo "${v}%"
+	else
+		echo "n/a"
+	fi
+}
+
+get_nss_usage() {
+	local v
+	v=$(grep '%' /sys/kernel/debug/qca-nss-drv/stats/cpu_load_ubi 2>/dev/null | awk '{print $2}' | sed 's/%//' | tail -n1)
+	if [ -n "$v" ]; then
+		echo "${v}%"
+	else
+		echo "n/a"
+	fi
+}
+
+case "$1" in
+	cpu_freq)     get_cpu_freq ;;
+	cpu_governor) get_cpu_governor ;;
+	cpu_temp)     get_cpu_temp ;;
+	wifi_temp)    get_wifi_temp ;;
+	cpu_usage)    get_cpu_usage ;;
+	nss_usage)    get_nss_usage ;;
+	*)
+		echo "Usage: $0 {cpu_freq|cpu_governor|cpu_temp|wifi_temp|cpu_usage|nss_usage}"
+		exit 1
+		;;
+esac
